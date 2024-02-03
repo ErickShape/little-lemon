@@ -1,4 +1,4 @@
-package com.example.littlelemon.ui.theme
+package com.example.littlelemon
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
@@ -13,7 +13,27 @@ fun NavigationHost(){
     NavHost(navController = navController, startDestination = Onboarding.route){
 
         composable(Onboarding.route){
-            Onboarding()
+            Onboarding(
+                navigateToHome = {
+                    navController.navigate(Home.route)
+                }
+            )
+        }
+
+        composable(Home.route){
+            Home(
+//                navigateToProfile = {
+//                  navController.navigate(Profile.route)
+//            }
+            )
+        }
+
+        composable(Profile.route){
+            Profile(
+                navigateToOnboarding = {
+                    navController.navigate(Onboarding.route)
+                }
+            )
         }
     }
 }
