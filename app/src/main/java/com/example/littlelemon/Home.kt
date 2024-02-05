@@ -17,11 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -40,6 +45,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,6 +55,11 @@ import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.room.Room
 import java.security.AccessController.getContext
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.RequestOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -56,54 +67,82 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Home(
-    //navigateToProfile: () -> Unit,
-){
+    navigateToProfile: () -> Unit,
+) {
     val db = AppDataBase.getDataBase(LocalContext.current)
     val menuItems = remember { mutableStateOf<List<MenuItem>>(emptyList()) }
     val textState = remember { mutableStateOf("") }
+    val buttonClicked = remember { mutableStateOf("") }
 
-
-
-    LaunchedEffect(Unit){
-        val items = withContext(Dispatchers.IO){
+    LaunchedEffect(textState.value,buttonClicked.value) {
+        val items = withContext(Dispatchers.IO) {
             db.menuDao().getAllMenuItems()
         }
-        menuItems.value = items
+        val filteredItems :List<MenuItem>
+//        var filteredItems = items.filter { content ->
+//            content.title.contains(textState.value, ignoreCase = true)
+//        }
+        if(buttonClicked.value !="" && buttonClicked.value!="all" ){
+            filteredItems = items.filter { content ->
+                content.category.contains(buttonClicked.value, ignoreCase = true)
+            }
+        }else{
+            filteredItems = items.filter { content ->
+                content.title.contains(textState.value, ignoreCase = true)
+            }
+        }
+
+        menuItems.value = filteredItems
 
     }
 
 
-    // Mostrar los datos en la pantalla usando el estado actualizado
-    Column (
-        modifier = Modifier
-        .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ){
 
-        Box(
+
+    // Mostrar los datos en la pantalla usando el estado actualizado
+    Column(
+        modifier = Modifier
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+
+        Row(
             modifier = Modifier
                 .fillMaxWidth(),
-            contentAlignment = Alignment.TopStart
+            horizontalArrangement = Arrangement.End
         ) {
             Image(
-                painter = painterResource(id = R.drawable.littlelemonlogo ),
-                contentDescription ="Logo de Little Lemon",
+                painter = painterResource(id = R.drawable.littlelemonlogo),
+                contentDescription = "Logo de Little Lemon",
                 modifier = Modifier
-                    .padding(top = 20.dp, bottom = 16.dp)
-                    .fillMaxWidth()
+                    .padding(top = 20.dp, bottom = 16.dp, end = 60.dp)
                     .scale(1.5f)
             )
+            IconButton(
+                onClick = {navigateToProfile()},
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(top = 16.dp, bottom = 4.dp, end = 20.dp)
+                    .clip(RoundedCornerShape(64.dp)),
+                content = {
+                    Image(
+                        painter = painterResource(id = R.drawable.perfil),
+                        contentDescription = "Profile picture",
+                    )
+                }
+            )
         }
-        Column (
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xFF495e57))
                 .height(300.dp),
-        ){
-            Row (modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-            ){
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
                 Text(
                     text = "Little Lemmon",
                     fontWeight = FontWeight.Bold,
@@ -112,11 +151,11 @@ fun Home(
                 )
             }
 
-            Row (
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-            ){
-                Column (
+            ) {
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(8.dp),
@@ -149,54 +188,141 @@ fun Home(
 
             OutlinedTextField(
                 value = textState.value,
-                onValueChange = {newText -> textState.value = newText },
-                label = { Text(
-                    text = "Enter search phrase",
-                    color = Color.Gray,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                )},
+                onValueChange = { newText -> textState.value = newText },
+                label = {
+                    Text(
+                        text = "Enter search phrase",
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                    )
+                },
                 shape = RoundedCornerShape(16.dp),
                 colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White),
                 leadingIcon = {
-                              Icon(
-                                  imageVector = Icons.Filled.Search,
-                                  contentDescription = "Search Icon",
-                                  tint = Color.Black
-                              )
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = "Search Icon",
+                        tint = Color.Black
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp, start = 20.dp, end = 20.dp),
-
+                    .padding(bottom = 20.dp, start = 20.dp, end = 20.dp)
             )
-
         }
 
-        Box {
-            LazyColumn {
-
-                Row {
-                    Text(text = "ORDER FOR DELIVERY!",)
-                }
-
-
-
-            }
-
+        UnderHeroSection(menuItems.value,buttonClicked.value){ newFilter ->
+            buttonClicked.value = newFilter
         }
 
     }
+
 }
 
-//                items(menuItems.value.size) { index ->
-//                    Text(text = menuItems.value[index].title)
-//                    Text(text = menuItems.value[index].description)
-//                }
-
-@Preview(showBackground = true)
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun OnboardingPreview(){
-    Home()
+fun UnderHeroSection(content:List<MenuItem>,filterButton:String ="",onFilterChange:(String) -> Unit){
+    val typeOfDishes = listOf<String>("Starters","Mains","Desserts","Drinks","All")
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ){
+            Text(
+                text = "ORDER FOR DELIVERY!",
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.Black,
+                fontSize = 20.sp
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            LazyRow{
+                items(typeOfDishes.size){index ->
+                    Button(
+                        onClick = {
+                            if(typeOfDishes[index].lowercase()=="all"){
+                                val filter = "all"
+                                onFilterChange(filter)
+                            }else{
+                                val filter = typeOfDishes[index].lowercase()
+                                onFilterChange(filter)}
+                        },
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .height(40.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.LightGray,
+                            //contentColor = Color.Gray
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = typeOfDishes[index],
+                            color = Color.DarkGray,
+                            fontSize = 16.sp
+                        )
+                    }
+
+
+                }
+            }
+        }
+
+        LazyColumn {
+
+            items(content.size){index ->
+                Divider(
+                    color = Color.Gray, // Establece el color del divisor a gris
+                    thickness = 1.dp, // Establece el grosor del divisor
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 5.dp, horizontal = 10.dp))
+                Row (
+                    modifier = Modifier.fillMaxWidth()
+                ){
+                    Column (
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp)
+                    ){
+                        Text(text= content[index].title, fontWeight = FontWeight.Bold)
+                        Text(text= content[index].description, fontWeight = FontWeight.Bold,color = Color.Gray)
+                        Text(text= "$${content[index].price}", fontWeight = FontWeight.Bold, color = Color.DarkGray)
+                    }
+                    showImage(path = content[index].image)
+
+                }
+            }
+        }
+    }
+
+
+}
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+fun showImage(path:String){
+    GlideImage(
+        model = path,
+        contentDescription = "LoadImage",
+        modifier = Modifier
+            .size(100.dp)
+            .padding(8.dp)
+            .clip(shape = RoundedCornerShape(16.dp)),
+        )
 }
 
+//@Preview(showBackground = true)
+//@Composable
+//fun OnboardingPreview() {
+//    //UnderHeroSection()
+//}
