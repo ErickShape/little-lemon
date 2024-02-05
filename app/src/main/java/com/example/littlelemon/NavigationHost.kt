@@ -9,7 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.littlelemon.Destinations.*
 import com.example.littlelemon.Onboarding
 
-
+//erick alvarez hizo esto
 
 @Composable
 fun NavigationHost(){
